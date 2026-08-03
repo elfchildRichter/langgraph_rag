@@ -1,0 +1,12 @@
+# LangChain 核心與 LLM / Embedding 整合套件
+langchain-core
+langchain-community
+langchain-google-genai
+langchain-ollama
+
+# RAG PDF 處理與向量資料庫
+pypdf
+chromadb
+
+# 環境變數管理
+python-dotenv
