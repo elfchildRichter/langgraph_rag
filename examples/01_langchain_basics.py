@@ -6,10 +6,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 # 1. 載入 .env 檔案中的環境變數
-# override=True 可確保 .env 的設定會覆蓋系統舊有的同名變數
 load_dotenv(override=True)
 
-# 驗證是否有成功讀取（僅供測試，正式環境請勿印出完整 Key）
+# 驗證是否有成功讀取
 api_key = os.getenv("GOOGLE_API_KEY")
 if not api_key:
     raise ValueError("找不到 GOOGLE_API_KEY，請檢查 .env 檔案設定！")
@@ -23,13 +22,11 @@ model = ChatGoogleGenerativeAI(
     temperature=0.7,
 )
 
-# 3. 建立 Prompt Template (提示詞範本)
-prompt = ChatPromptTemplate.from_messages(
-    [("system",
-    "你是一位專業且幽默的 Python 程式導師，請用繁體中文回答。"),
+# 3. 建立 Prompt Template
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "你是一位專業且幽默的 Python 程式導師，請用繁體中文回答。"),
     ("user", "{question}"),
-    ]
-)
+])
 
 # 4. 初始化 Output Parser
 parser = StrOutputParser()
