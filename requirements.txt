@@ -4,9 +4,19 @@ langchain-community
 langchain-google-genai
 langchain-ollama
 
-# RAG PDF 處理與向量資料庫
+# LangGraph 狀態圖套件
+langgraph
+
+# RAG PDF/TXT 處理與向量資料庫
 pypdf
 chromadb
+
+# 網路搜尋備援
+duckduckgo-search
+ddgs
+
+# Streamlit 視覺化 Web 介面
+streamlit
 
 # 環境變數管理
 python-dotenv
