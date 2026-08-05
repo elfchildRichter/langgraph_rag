@@ -84,13 +84,14 @@ class GraphNodes:
 
     def grade_documents_node(self, state: GraphState) -> Dict[str, Any]:
         """
-        文件相關性評估節點：一次性打包評估檢索出的所有文件相關性 (Batch CRAG)
+        文件相關性評估節點：使用 chain.batch 並列獨立評估每份文件，精準剔除無用區塊 (Parallel CRAG)
         """
         question = state["question"]
         documents = state["documents"]
         trace = list(state.get("trace", []))
-        trace.append(f"[節點: Grade Documents] 評估 {len(documents)} 份文件的相關性...")
+        trace.append(f"[節點: Grade Documents] 開始並列評估 {len(documents)} 份文件的獨立相關性...")
 
+        # 1. 邊界條件檢查：如果原本就沒檢索到文件
         if not documents:
             if self.enable_web_search:
                 trace.append("  └─ 評估結果: 無檢索文件，觸發 Web Search 備援機制")
@@ -99,37 +100,53 @@ class GraphNodes:
                 trace.append("  └─ 評估結果: 無檢索文件 (即時網路搜尋已停用，直接進行生成)")
                 return {"documents": [], "web_search_needed": "No", "trace": trace}
 
-        # 將所有檢索區塊打包單次送交 LLM
-        formatted_context = format_docs(documents)
-
+        # 2. 定義針對「單一文件」的審查 Prompt
         prompt = ChatPromptTemplate.from_messages([
             ("system", """你是一位嚴謹的文件相關性審查專家。
-請評估提供的參考文件內容是否包含有助於回答使用者問題的關鍵資訊。
-如果參考資料包含與問題相關的內容，請回傳 {{"relevant": "yes"}}；否則回傳 {{"relevant": "no"}}。
+請評估下方這份參考文件內容是否包含有助於回答使用者問題的關鍵資訊。
+如果包含相關內容，請回傳 {{"relevant": "yes"}}；否則回傳 {{"relevant": "no"}}。
 請僅回傳 JSON 格式。"""),
-            ("human", "參考文件:\n{context}\n\n使用者問題: {question}")
+            ("human", "參考文件內容:\n{context}\n\n使用者問題: {question}")
         ])
 
         chain = prompt | self.llm | JsonOutputParser()
-        try:
-            res = chain.invoke({"context": formatted_context, "question": question})
-            is_relevant = res.get("relevant", "yes").lower() == "yes"
-        except Exception:
-            is_relevant = True
 
-        if not is_relevant:
+        # 3. 準備批次輸入資料 (Batch Input Payload)
+        batch_inputs = [
+            {"context": doc.page_content, "question": question}
+            for doc in documents
+        ]
+
+        # 4. 使用 chain.batch 並列併發評估所有文件
+        try:
+            # chain.batch 會並列發送請求，回傳與 batch_inputs 等長度的結果 list
+            batch_results = chain.batch(batch_inputs)
+        except Exception as e:
+            trace.append(f"  └─ 並列評估過程遭遇異常 ({str(e)})，保留所有文件作為預設降級策略")
+            return {"documents": documents, "web_search_needed": "No", "trace": trace}
+
+        # 5. 根據並列評估結果，精準篩選 (Filter) 留下的文件
+        filtered_docs = []
+        for doc, res in zip(documents, batch_results):
+            is_rel = res.get("relevant", "no").lower() == "yes" if isinstance(res, dict) else False
+            if is_rel:
+                filtered_docs.append(doc)
+
+        # 6. 判斷篩選後的結果，決定是否需要觸發 Web Search 備援
+        if not filtered_docs:  # 所有文件都被剔除了
             if self.enable_web_search:
                 web_search_needed = "Yes"
-                trace.append("  └─ 評估結果: 檢索文件與問題無關，觸發 Web Search 備援機制")
+                trace.append(f"  └─ 評估結果: 原有 {len(documents)} 份文件皆無關並已全數剔除，觸發 Web Search 備援")
             else:
                 web_search_needed = "No"
-                trace.append("  └─ 評估結果: 檢索文件與問題無關 (即時網路搜尋已停用，直接進行生成)")
+                trace.append(f"  └─ 評估結果: 原有 {len(documents)} 份文件皆無關並已全數剔除 (網路搜尋已停用，進行生成)")
         else:
             web_search_needed = "No"
-            trace.append(f"  └─ 評估結果: 確認包含 {len(documents)} 份有效參考文件")
+            trace.append(f"  └─ 評估結果: 成功從 {len(documents)} 份文件中篩選出 {len(filtered_docs)} 份高相關度文件")
 
+        # 7. 回傳過濾後的有效文件清單
         return {
-            "documents": documents,
+            "documents": filtered_docs,
             "web_search_needed": web_search_needed,
             "trace": trace
         }
