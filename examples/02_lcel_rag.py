@@ -8,7 +8,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 
 load_dotenv(override=True)
 PDF_PATH = "data/Produktinformationsblatt.pdf"

@@ -10,6 +10,7 @@ langgraph
 # RAG PDF/TXT 處理與向量資料庫
 pypdf
 chromadb
+langchain-chroma
 
 # 網路搜尋備援
 duckduckgo-search
