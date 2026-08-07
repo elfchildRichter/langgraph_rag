@@ -223,3 +223,6 @@ data/
 # AI Agent & IDE configs
 .agents/
 .claude/
+
+# ChromaDB
+.chroma_db/
