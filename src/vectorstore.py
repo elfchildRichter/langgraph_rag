@@ -4,8 +4,9 @@ from typing import List, Union
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from src.providers import get_llm_and_embeddings
+from src import config
 
 def load_documents(file_path: str) -> List[Document]:
     """載入單一 PDF 或 TXT 文件"""
@@ -59,21 +60,53 @@ def build_vectorstore(documents: List[Document], embeddings, collection_name: st
     )
     return vectorstore
 
-def get_retriever(file_paths: Union[str, List[str]], provider: str = "google", k: int = 3):
-    """
-    一步到位：載入單一/多份文件 -> 切分 -> 向量化 -> 回傳 Retriever
-    """
-    if isinstance(file_paths, str):
-        paths = [file_paths]
-    else:
-        paths = file_paths
+# def get_retriever(file_paths: Union[str, List[str]], provider: str = "google", k: int = 3):
+#     """
+#     一步到位：載入單一/多份文件 -> 切分 -> 向量化 -> 回傳 Retriever
+#     """
+#     if isinstance(file_paths, str):
+#         paths = [file_paths]
+#     else:
+#         paths = file_paths
 
-    raw_docs = load_multiple_documents(paths)
-    splits = split_documents(raw_docs)
-    _, embeddings = get_llm_and_embeddings(provider)
+#     raw_docs = load_multiple_documents(paths)
+#     splits = split_documents(raw_docs)
+#     _, embeddings = get_llm_and_embeddings(provider)
     
+#     file_id = get_files_hash(paths)
+#     collection_name = f"langgraph_rag_{provider}_{file_id}"
+    
+#     vectorstore = build_vectorstore(splits, embeddings, collection_name=collection_name)
+#     return vectorstore.as_retriever(search_kwargs={"k": k})
+
+
+def get_retriever(file_paths: Union[str, List[str]], provider: str = "google", k: int = 3):
+    paths = [file_paths] if isinstance(file_paths, str) else file_paths
+    provider_name = provider.lower().strip()
+
     file_id = get_files_hash(paths)
-    collection_name = f"langgraph_rag_{provider}_{file_id}"
+    db_path = f"{config.CHROMA_PERSIST_DIR}/{provider_name}/{file_id}" # 快取資料夾名稱
+    collection_name = f"langgraph_rag_{provider_name}_{file_id}"
     
-    vectorstore = build_vectorstore(splits, embeddings, collection_name=collection_name)
+    _, embeddings = get_llm_and_embeddings(provider)
+
+    # 1. 檢查硬碟中是否已經有這個 Hash 的向量庫
+    if os.path.exists(db_path):
+        print("發現硬碟快取！直接載入...")
+        vectorstore = Chroma(
+            collection_name=collection_name,
+            persist_directory=db_path,
+            embedding_function=embeddings
+        )
+    else:
+        print("首次建立，計算向量中...")
+        raw_docs = load_multiple_documents(paths)
+        splits = split_documents(raw_docs)
+        vectorstore = Chroma.from_documents(
+            documents=splits,
+            embedding=embeddings,
+            collection_name=collection_name,
+            persist_directory=db_path
+        )
+        
     return vectorstore.as_retriever(search_kwargs={"k": k})
