@@ -83,12 +83,12 @@ def build_vectorstore(documents: List[Document], embeddings, collection_name: st
 def get_retriever(file_paths: Union[str, List[str]], provider: str = "google", k: int = 3):
     paths = [file_paths] if isinstance(file_paths, str) else file_paths
     provider_name = provider.lower().strip()
+    _, embeddings = get_llm_and_embeddings(provider)
 
     file_id = get_files_hash(paths)
-    db_path = f"{config.CHROMA_PERSIST_DIR}/{provider_name}/{file_id}" # 快取資料夾名稱
-    collection_name = f"langgraph_rag_{provider_name}_{file_id}"
-    
-    _, embeddings = get_llm_and_embeddings(provider)
+    embed_type = embeddings.__class__.__name__
+    db_path = f"{config.CHROMA_PERSIST_DIR}/{provider_name}_{embed_type}/{file_id}" # 快取資料夾名稱
+    collection_name = f"langgraph_rag_{provider_name}_{embed_type}_{file_id}"
 
     # 1. 檢查硬碟中是否已經有這個 Hash 的向量庫
     if os.path.exists(db_path):

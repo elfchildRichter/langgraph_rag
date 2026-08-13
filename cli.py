@@ -13,14 +13,14 @@ def main():
         sys.exit(1)
 
     print("\n=== 請選擇 LLM 模型提供者 ===")
-    print("1. Google Gemini (預設)")
-    print("2. Ollama (本地 / 自建伺服器)")
+    print("1. Ollama (遠端 / 本地預設)")
+    print("2. Google Gemini")
     choice = input("請選擇 (1/2，按下 Enter 使用預設 1): ").strip()
 
     if choice == "2":
-        chosen_provider = "ollama"
-    else:
         chosen_provider = "google"
+    else:
+        chosen_provider = "ollama"
 
     web_choice = input("\n是否啟用「即時網路搜尋 (Web Search)」備援？(y/n，按下 Enter 預設啟用 y): ").strip().lower()
     enable_web_search = False if web_choice == "n" else True

@@ -42,11 +42,11 @@ with st.sidebar:
     
     provider_choice = st.radio(
         "選擇 LLM 模型提供者",
-        options=["Google Gemini", "Ollama"],
-        index=0 if config.DEFAULT_PROVIDER == "google" else 1,
-        help="支援 Google API 或本地 Ollama 服務"
+        options=["Ollama", "Google Gemini"],
+        index=0 if config.DEFAULT_PROVIDER == "ollama" else 1,
+        help="支援 Google API 或 Ollama 本地 / 遠端服務"
     )
-    provider_key = "google" if provider_choice == "Google Gemini" else "ollama"
+    provider_key = "ollama" if provider_choice == "Ollama" else "google"
 
     st.markdown("---")
     st.subheader("文件上傳與索引")
