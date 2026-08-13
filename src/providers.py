@@ -19,11 +19,16 @@ def get_llm_and_embeddings(provider: str = None, temperature: float = 0):
 
         client_kwargs = {"headers": {"Authorization": f"Bearer {api_key}"}} if api_key else None
 
-        embeddings = OllamaEmbeddings(
-            model=embed_model,
-            base_url=base_url,
-            client_kwargs=client_kwargs,
-        )
+        # Ollama Cloud (api.ollama.com) 不提供 Embeddings API 服務，自動採用 Google Embeddings 作為檢索備援
+        if "api.ollama.com" in base_url:
+            embeddings = GoogleGenerativeAIEmbeddings(model=config.GOOGLE_EMBED_MODEL)
+        else:
+            embeddings = OllamaEmbeddings(
+                model=embed_model,
+                base_url=base_url,
+                client_kwargs=client_kwargs,
+            )
+
         llm = ChatOllama(
             model=llm_model,
             base_url=base_url,
