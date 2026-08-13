@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 安裝系統基本工具
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 複製依賴項目檔案並安裝
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 複製前端程式碼
+COPY frontend/ ./frontend/
+
+# 暴露 Streamlit 埠號 8501
+EXPOSE 8501
+
+# 設定預設環境變數 (容器內部通訊)
+ENV BACKEND_URL=http://backend:8000
+
+# 啟動 Streamlit 前端服務
+CMD ["streamlit", "run", "frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
