@@ -21,3 +21,12 @@ streamlit
 
 # 環境變數管理
 python-dotenv
+
+# 後端 API 與 商業化認證/配額套件
+fastapi
+uvicorn
+pyjwt
+bcrypt
+python-multipart
+httpx
+pydantic

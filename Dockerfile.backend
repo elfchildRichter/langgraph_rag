@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 安裝系統基本工具
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 複製依賴項目檔案並安裝
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 複製專案程式碼
+COPY src/ ./src/
+COPY backend/ ./backend/
+COPY data/ ./data/
+
+# 暴露 FastAPI 埠號 8000
+EXPOSE 8000
+
+# 啟動 Uvicorn 服務
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
