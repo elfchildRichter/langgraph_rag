@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 複製前端程式碼
+# 複製前端程式碼與 Streamlit 設定
+COPY .streamlit/ ./.streamlit/
 COPY frontend/ ./frontend/
 
 # 暴露 Streamlit 埠號 8501
