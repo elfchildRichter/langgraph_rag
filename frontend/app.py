@@ -10,7 +10,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000").strip().rstrip("/")
+if not (BACKEND_URL.startswith("http://") or BACKEND_URL.startswith("https://")):
+    BACKEND_URL = f"https://{BACKEND_URL}"
 
 # 專業藍色科技風格 CSS 樣式系統 (Enterprise Blue Design System)
 st.markdown("""
