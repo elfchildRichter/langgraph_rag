@@ -20,5 +20,5 @@ COPY data/ ./data/
 # 暴露 FastAPI 埠號 8000
 EXPOSE 8000
 
-# 啟動 Uvicorn 服務
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 啟動 Uvicorn 服務 (支援 Railway / Render 動態 PORT)
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
