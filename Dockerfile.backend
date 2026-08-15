@@ -1,6 +1,12 @@
-FROM python:3.11
+FROM python:3.11-slim
 
 WORKDIR /app
+
+# 安裝系統基本工具
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # 複製依賴項目檔案並安裝
 COPY requirements.txt .
@@ -9,7 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 複製專案程式碼
 COPY src/ ./src/
 COPY backend/ ./backend/
-COPY data/ ./data/
+# 建立資料與上傳目錄
+RUN mkdir -p /app/data /app/data/uploads
 
 # 暴露 FastAPI 埠號 8000
 EXPOSE 8000
